@@ -12,7 +12,7 @@ import (
 var DB *pgxpool.Pool
 
 func InitDatabase() (err error) {
-	dsn := "postgresql://dia_intern_prod:*DiA360*@10.101.0.241:5432/techupdb"
+	dsn := "postgresql://dia_intern_prod:gtYXUPuU5c32e7l@10.101.0.241:5432/techupdb"
 	DB, err = pgxpool.Connect(context.Background(), dsn)
 	if err != nil {
 		log.Fatalf("Unable to connect to database: %v\n", err)

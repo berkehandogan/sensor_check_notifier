@@ -21,7 +21,7 @@ func CheckSensorPerformance(dbPool *pgxpool.Pool) {
 		WHERE message = $1
 		ORDER BY date DESC  -- İsteğe bağlı: En son logları önce işlemek için
 	`
-	rows, err := dbPool.Query(context.Background(), query, "Sistem veri akışı tamamlandı")
+	rows, err := dbPool.Query(context.Background(), query, "Sistem veri akışı tamamlandı.")
 	if err != nil {
 		log.Printf("opc_system_logs sorgulanırken hata: %v\n", err)
 		return
@@ -53,7 +53,7 @@ func CheckSensorPerformance(dbPool *pgxpool.Pool) {
 			logEntry.OpcServerId, logEntry.SuccessSensor, logEntry.TotalSensor, successRatio, logEntry.Date)
 
 		// 3. Başarı oranı %70'in altındaysa ilgili sunucu bilgilerini çek
-		if successRatio < 99.0 {
+		if successRatio < 70.0 {
 			log.Printf("UYARI: OpcServerId %d için başarı oranı (%.2f%%) %%70'in altında (Tarih: %s).\n", logEntry.OpcServerId, successRatio, logEntry.Date)
 
 			var serverInfo models.TrendAnalysisServer

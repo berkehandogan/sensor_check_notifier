@@ -1,11 +1,13 @@
 package models
 
+import "time"
+
 type OpcSystemLogs struct {
-	OpcServerId   int    `db:"opc_server_id"`
-	Message       string `db:"message"`
-	Date          string `db:"date"`
-	TotalSensor   int    `db:"toplam_sensor"`
-	SuccessSensor int    `db:"basarili_sensor"`
+	OpcServerId   int       `db:"opc_server_id"`
+	Message       string    `db:"message"`
+	Date          time.Time `db:"date"`
+	TotalSensor   int       `db:"toplam_sensor"`
+	SuccessSensor int       `db:"basarili_sensor"`
 }
 
 type TrendAnalysisServer struct {

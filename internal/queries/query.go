@@ -21,8 +21,9 @@ func CheckSensorPerformance(dbPool *pgxpool.Pool) {
 		"System data flow completed",
 	}
 
-	date := time.Date(2025, 5, 15, 0, 0, 0, 0, time.UTC) // istediğin tarih
-	dateNextDay := date.Add(24 * time.Hour)
+	now := time.Now().UTC()
+	yesterday := now.AddDate(0, 0, -1).Truncate(24 * time.Hour) // düne ait 00:00:00
+	today := yesterday.Add(24 * time.Hour)                      // bugüne ait 00:00:00
 
 	query := `
 		SELECT opc_server_id, message, toplam_sensor, basarili_sensor, date
@@ -31,7 +32,7 @@ func CheckSensorPerformance(dbPool *pgxpool.Pool) {
 		AND date >= $2
 		AND date < $3
 	`
-	rows, err := dbPool.Query(context.Background(), query, targetMessages, date, dateNextDay)
+	rows, err := dbPool.Query(context.Background(), query, targetMessages, yesterday, today)
 	if err != nil {
 		log.Printf("opc_system_logs sorgulanırken hata: %v\n", err)
 		return

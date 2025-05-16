@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"sensor_check_notifier/internal/models"
+	"time"
 
 	"github.com/jackc/pgx"
 	"github.com/jackc/pgx/v4/pgxpool"
@@ -14,14 +15,23 @@ import (
 func CheckSensorPerformance(dbPool *pgxpool.Pool) {
 	fmt.Println("Sensör performans kontrolü başlatılıyor...")
 
-	// 1. "Sistem veri akışı tamamlandı" mesajına sahip logları çek
+	// 1. Şuan sadece "Sistem veri akışı tamamlandı." mesajına sahip logları çeker. Burayı şimdilik böyle bırakıyorum diğer mesajlar içinde ayarla.
+	targetMessages := []string{
+		"Sistem veri akışı tamamlandı.",
+		"System data flow completed",
+	}
+
+	date := time.Date(2025, 5, 15, 0, 0, 0, 0, time.UTC) // istediğin tarih
+	dateNextDay := date.Add(24 * time.Hour)
+
 	query := `
 		SELECT opc_server_id, message, toplam_sensor, basarili_sensor, date
 		FROM techupdb.techup.opc_system_logs
-		WHERE message = $1
-		ORDER BY date DESC  -- İsteğe bağlı: En son logları önce işlemek için
+		WHERE message = ANY($1)
+		AND date >= $2
+		AND date < $3
 	`
-	rows, err := dbPool.Query(context.Background(), query, "Sistem veri akışı tamamlandı.")
+	rows, err := dbPool.Query(context.Background(), query, targetMessages, date, dateNextDay)
 	if err != nil {
 		log.Printf("opc_system_logs sorgulanırken hata: %v\n", err)
 		return
@@ -29,7 +39,7 @@ func CheckSensorPerformance(dbPool *pgxpool.Pool) {
 	defer rows.Close()
 
 	var problematicServers []models.TrendAnalysisServer
-	processedServerIDs := make(map[int]bool) // Aynı server ID için birden fazla uyarıyı engellemek (isteğe bağlı)
+	processedServerIDs := make(map[int]bool) // Aynı server ID için birden fazla uyarıyı engellemek için
 
 	fmt.Println("İlgili log kayıtları işleniyor...")
 	// 2. Her bir log kaydını işle
@@ -49,8 +59,8 @@ func CheckSensorPerformance(dbPool *pgxpool.Pool) {
 
 		successRatio := (float64(logEntry.SuccessSensor) / float64(logEntry.TotalSensor)) * 100.0
 
-		log.Printf("DEBUG: OpcServerId: %d, Başarılı: %d, Toplam: %d, Oran: %.2f%% (Tarih: %s)\n",
-			logEntry.OpcServerId, logEntry.SuccessSensor, logEntry.TotalSensor, successRatio, logEntry.Date)
+		//log.Printf("DEBUG: OpcServerId: %d, Başarılı: %d, Toplam: %d, Oran: %.2f%% (Tarih: %s)\n",
+		//logEntry.OpcServerId, logEntry.SuccessSensor, logEntry.TotalSensor, successRatio, logEntry.Date)
 
 		// 3. Başarı oranı %70'in altındaysa ilgili sunucu bilgilerini çek
 		if successRatio < 70.0 {
@@ -88,7 +98,7 @@ func CheckSensorPerformance(dbPool *pgxpool.Pool) {
 		log.Printf("opc_system_logs satırları işlenirken döngü sonrası hata: %v\n", rows.Err())
 	}
 
-	// 4. Problemli sunucuları listele (veya ileride bildirim gönder)
+	// 4. Problemli sunucuları listele
 	if len(problematicServers) > 0 {
 		fmt.Println("\n--- DİKKAT EDİLMESİ GEREKEN SUNUCULAR (Başarı Oranı < %70) ---")
 		for _, server := range problematicServers {

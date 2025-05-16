@@ -90,6 +90,7 @@ func CheckSensorPerformance(dbPool *pgxpool.Pool) {
 			// Eğer bu server ID'yi daha önce işlemediysek listeye ekle
 			if _, ok := processedServerIDs[serverInfo.Id]; !ok {
 				problematicServers = append(problematicServers, serverInfo)
+				processedServerIDs[serverInfo.Id] = true
 			}
 		}
 	}
